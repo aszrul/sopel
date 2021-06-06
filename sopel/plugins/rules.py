@@ -638,6 +638,22 @@ class AbstractRule(object):
         """
         raise NotImplementedError
 
+    def allow_bots(self):
+        """Tell if the rule should match bot commands.
+
+        :return: ``True`` when the rule allows bot commands,
+                 ``False`` otherwise
+
+        A "bot command" is any IRC protocol command or numeric that has been
+        tagged as ``bot`` (or ``draft/bot``) by the IRC server.
+
+        .. seealso::
+
+            The `IRCv3 Bot Mode specification`__.
+
+        .. __: https://ircv3.net/specs/extensions/bot-mode
+        """
+
     def allow_echo(self):
         """Tell if the rule should match echo messages.
 
@@ -769,6 +785,7 @@ class Rule(AbstractRule):
             'priority': getattr(handler, 'priority', PRIORITY_MEDIUM),
             'events': getattr(handler, 'event', []),
             'intents': getattr(handler, 'intents', []),
+            'allow_bots': getattr(handler, 'allow_bots', False),
             'allow_echo': getattr(handler, 'echo', False),
             'threaded': getattr(handler, 'thread', True),
             'output_prefix': getattr(handler, 'output_prefix', ''),
@@ -858,6 +875,7 @@ class Rule(AbstractRule):
                  handler=None,
                  events=None,
                  intents=None,
+                 allow_bots=False,
                  allow_echo=False,
                  threaded=True,
                  output_prefix=None,
@@ -878,6 +896,7 @@ class Rule(AbstractRule):
         # filters
         self._events = events or ['PRIVMSG']
         self._intents = intents or []
+        self._allow_bots = bool(allow_bots)
         self._allow_echo = bool(allow_echo)
 
         # execution
@@ -987,8 +1006,10 @@ class Rule(AbstractRule):
         return (
             self.match_event(event) and
             self.match_intent(intent) and
-            (not is_bot_message or (is_echo_message and self.allow_echo())) and
-            (not is_echo_message or self.allow_echo())
+            (
+                (not is_bot_message or self.allow_bots()) or
+                (is_echo_message and self.allow_echo())
+            ) and (not is_echo_message or self.allow_echo())
         )
 
     def parse(self, text):
@@ -1008,6 +1029,9 @@ class Rule(AbstractRule):
             regex.match(intent)
             for regex in self._intents
         ))
+
+    def allow_bots(self):
+        return self._allow_bots
 
     def allow_echo(self):
         return self._allow_echo

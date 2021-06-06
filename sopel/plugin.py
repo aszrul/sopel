@@ -19,6 +19,7 @@ __all__ = [
     # decorators
     'action_command',
     'action_commands',
+    'allow_bots',
     'command',
     'commands',
     'ctcp',
@@ -522,6 +523,26 @@ def thread(value):
         function.thread = threaded
         return function
 
+    return add_attribute
+
+
+def allow_bots(function=None):
+    """Decorate a function to specify that it should receive events from bots.
+
+    On networks implementing the `Bot Mode specification`__, messages and
+    other events from other clients that have identified themselves as bots
+    will be tagged as such, and Sopel will ignore them by default. This
+    decorator allow opting in for a function to receive these events anyway.
+
+    .. __: https://ircv3.net/specs/extensions/bot-mode
+    """
+    def add_attribute(function):
+        function.allow_bots = True
+        return function
+
+    # hack to allow both @allow_bots and @allow_bots() to work
+    if callable(function):
+        return add_attribute(function)
     return add_attribute
 
 
