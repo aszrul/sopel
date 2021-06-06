@@ -900,6 +900,7 @@ def receive_cap_ls_reply(bot, trigger):
         'away-notify',
         'cap-notify',
         'server-time',
+        'message-tags',
     ]
     for cap in core_caps:
         if cap not in bot._cap_reqs:
